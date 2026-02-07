@@ -1,0 +1,25 @@
+{
+	"template": {
+		"prefix": "Template",
+		"body": [
+			"#include \"other/template.hpp\"",
+			"void solve() {",
+			"}",
+			"",
+			"int main() {",
+			"    cin.tie(nullptr);",
+			"    ios::sync_with_stdio(false);",
+			"    cout << fixed << setprecision(20);",
+			"    cerr << fixed << setprecision(7);",
+			"",
+			"    int T = 1;",
+			"    // cin >> T;",
+			"    for (int test_case = 1; test_case <= T; test_case++) {",
+			"        // debug(test_case);",
+			"        solve();",
+			"    }",
+			"}"
+		],
+		"description": "template"
+	}
+}

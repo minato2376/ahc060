@@ -1,0 +1,151 @@
+#!/bin/bash
+set -euo pipefail
+
+# --- 設定 ---
+CPP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+CXX="g++"
+
+CXXFLAGS=(
+    -std=gnu++23
+    -O2
+    -D MINATO_LOCAL
+    -Wall
+    -Wextra
+    -g
+    -fsanitize=address
+    -I "$CPP_DIR/library-cpp"
+)
+
+# --- サブコマンド ---
+usage() {
+    echo "Usage: cppx <command> [args...]"
+    echo ""
+    echo "Commands:"
+    echo "  build <file> [opts...]  Compile a C++ source file"
+    echo "  run [exe] [args...]     Run an executable (default: ./a.out)"
+    echo "  format <file>...        Format source files with clang-format"
+    echo "  bundle <file>           Bundle includes with oj-bundle"
+    echo "  bb <file> [opts...]     Build and bundle a C++ source file"
+    echo "  test <num>...           Run ./a.out on test case(s) and show score"
+    echo ""
+    echo "Examples:"
+    echo "  cppx build A.cpp"
+    echo "  cppx build A.cpp -o A"
+    echo "  cppx run"
+    echo "  cppx run ./A"
+    echo "  cppx format A.cpp"
+    echo "  cppx bundle A.cpp"
+    echo "  cppx test 0"
+    echo "  cppx test 0 1 2 3"
+}
+
+build() {
+    if [[ $# -eq 0 ]]; then
+        echo "Error: source file is required" >&2
+        echo "" >&2
+        usage >&2
+        exit 1
+    fi
+
+    local source="$1"
+    shift
+
+    "$CXX" "${CXXFLAGS[@]}" "$source" "$@"
+}
+
+run() {
+    local exe="${1:-./a.out}"
+    shift 2>/dev/null || true
+    "$exe" "$@"
+}
+
+bundle() {
+    if [[ $# -eq 0 ]]; then
+        echo "Error: source file is required" >&2
+        echo "" >&2
+        usage >&2
+        exit 1
+    fi
+
+    oj-bundle "$@" -I "$CPP_DIR/library-cpp" > bundle.cpp
+}
+
+bb() {
+    build "$@"
+    bundle "$@"
+}
+
+test_case() {
+    if [[ $# -eq 0 ]]; then
+        echo "Error: test case number is required" >&2
+        echo "" >&2
+        usage >&2
+        exit 1
+    fi
+
+    local out_dir="$CPP_DIR/tools/out"
+    mkdir -p "$out_dir"
+
+    for num in "$@"; do
+        local id
+        id=$(printf "%04d" "$num")
+        local in_file="$CPP_DIR/tools/in/${id}.txt"
+        local out_file="$out_dir/${id}.txt"
+
+        if [[ ! -f "$in_file" ]]; then
+            echo "Error: input file not found: $in_file" >&2
+            continue
+        fi
+
+        ./a.out < "$in_file" > "$out_file" 2>/dev/null
+        local score
+        score=$(cd "$CPP_DIR/tools" && CARGO_HOME=/tmp/cargo_home cargo run -r --bin vis "in/${id}.txt" "out/${id}.txt" 2>&1 | grep -o 'Score = [0-9]*')
+        echo "${id}: ${score}"
+    done
+}
+
+format() {
+    if [[ $# -eq 0 ]]; then
+        echo "Error: source file is required" >&2
+        echo "" >&2
+        usage >&2
+        exit 1
+    fi
+
+    clang-format -i "$@"
+}
+
+# --- メイン ---
+if [[ $# -eq 0 ]]; then
+    usage
+    exit 1
+fi
+
+command="$1"
+shift
+
+case "$command" in
+    build)
+        build "$@"
+        ;;
+    run)
+        run "$@"
+        ;;
+    format)
+        format "$@"
+        ;;
+    bundle)
+        bundle "$@"
+        ;;
+    bb)
+        bb "$@"
+        ;;
+    test)
+        test_case "$@"
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac

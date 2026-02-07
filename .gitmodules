@@ -1,0 +1,3 @@
+[submodule "library-cpp"]
+	path = library-cpp
+	url = https://github.com/minato2376/library-cpp.git

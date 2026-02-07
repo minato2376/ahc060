@@ -1,0 +1,52 @@
+#!/bin/bash
+set -euo pipefail
+
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+# --- サブコマンド ---
+usage() {
+    echo "Usage: tools <command> [args...]"
+    echo ""
+    echo "Commands:"
+    echo "  unzip <zipfile>  Extract a zip file into the project root"
+    echo ""
+    echo "Examples:"
+    echo "  tools unzip testcases.zip"
+}
+
+unzip_cmd() {
+    if [[ $# -eq 0 ]]; then
+        echo "Error: zip file path is required" >&2
+        echo "" >&2
+        echo "Usage: tools unzip <zipfile>" >&2
+        exit 1
+    fi
+
+    local zipfile="$1"
+
+    if [[ ! -f "$zipfile" ]]; then
+        echo "Error: file not found: $zipfile" >&2
+        exit 1
+    fi
+
+    unzip -o "$zipfile" -d "$PROJECT_DIR"
+}
+
+# --- メイン ---
+if [[ $# -eq 0 ]]; then
+    usage
+    exit 1
+fi
+
+command="$1"
+shift
+
+case "$command" in
+    unzip)
+        unzip_cmd "$@"
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac
