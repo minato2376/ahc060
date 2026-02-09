@@ -4,7 +4,8 @@
 // 方針:
 // - 隣接する店があり、納品するとスコアが上がるなら店に移動して納品
 // - それ以外で、現在Wの木にいるなら1〜2%の確率で行動2(W→R変換)
-// - 上記以外なら、前の頂点以外からランダムに隣接頂点を選んで移動
+// - 上記以外なら、前の頂点以外のアイスの木からランダムに移動
+// - 移動できるアイスの木がないなら、しかたなく店へ移動
 
 void solve() {
     INT(N, M, K, T);
@@ -65,14 +66,26 @@ void solve() {
             }
         }
 
-        // --- 優先3: 前の頂点以外からランダムに隣接頂点を選んで移動 ---
-        vec<int> cands;
+        // --- 優先3: 前の頂点以外のアイスの木からランダムに移動 ---
+        vec<int> trees;
+        vec<int> shops;
         for (int u : adj[cur]) {
-            if (u != prev) cands.push_back(u);
+            if (u == prev) continue;
+            if (u >= K)
+                trees.push_back(u);
+            else
+                shops.push_back(u);
         }
-        if (cands.empty()) break;  // 2辺連結なので起きないはず
 
-        int nxt = cands[rng() % cands.size()];
+        int nxt;
+        if (!trees.empty()) {
+            nxt = trees[rng() % trees.size()];
+        } else if (!shops.empty()) {
+            // 木がないならしかたなく店へ
+            nxt = shops[rng() % shops.size()];
+        } else {
+            break;  // 2辺連結なので起きないはず
+        }
         if (nxt >= K) {
             // 木 → アイスを収穫
             cone += flavor[nxt];
