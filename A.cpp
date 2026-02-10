@@ -2,8 +2,8 @@
 
 // === ランダムウォーク貪欲法 (BFS先読みあり) ===
 // 方針:
-// - 最大距離8までBFSして、スコアが上がる店への経路があればその移動をする
-// - それ以外で、現在Wの木にいるなら5〜30%の確率で行動2(W→R変換)
+// - BFS最大距離 max(rand(9,11)-コーン長, 6) でスコアが上がる店への経路を探す
+// - それ以外で、現在Wの木にいるなら10〜50%の確率で行動2(W→R変換)
 // - 上記以外なら、前の頂点以外のアイスの木からランダムに移動
 // - 移動できるアイスの木がないなら、しかたなく店へ移動
 
@@ -31,9 +31,11 @@ void solve() {
 
     mt19937 rng(42);
 
-    // BFS: 最大距離8まで探索して、スコアが上がる店への経路を返す
+    // BFS: 最大距離 max(rand(9,11)-コーン長, 6) まで探索
     // 経路途中のコーン変化（木で収穫、店で納品リセット）もシミュレート
     auto bfs_find_shop = [&]() -> vec<int> {
+        int base = 9 + (int)(rng() % 3);  // 9〜11
+        int max_depth = max(base - (int)cone.size(), 6);
         struct Node {
             int v, prv;
             string cone;
@@ -61,9 +63,8 @@ void solve() {
             que.push(idx);
         }
 
-        // 深さ2〜8
         int depth = 1;
-        while (!que.empty() && depth < 8) {
+        while (!que.empty() && depth < max_depth) {
             int sz = SZ(que);
             rep(_, sz) {
                 int ni = que.front();
@@ -103,7 +104,7 @@ void solve() {
     };
 
     while (steps < T) {
-        // --- 優先1: BFS距離8以内でスコアが上がる店への経路を探す ---
+        // --- 優先1: BFS先読みでスコアが上がる店への経路を探す ---
         vec<int> path = bfs_find_shop();
         if (!path.empty()) {
             for (int v : path) {
@@ -122,9 +123,9 @@ void solve() {
             continue;
         }
 
-        // --- 優先2: 現在Wの木にいるなら、5〜30%の確率で行動2 ---
+        // --- 優先2: 現在Wの木にいるなら、10〜50%の確率で行動2 ---
         if (cur >= K && flavor[cur] == 'W') {
-            int prob = 5 + (int)(rng() % 26);  // 5〜30%
+            int prob = 10 + (int)(rng() % 41);  // 10〜50%
             if ((int)(rng() % 100) < prob) {
                 print(-1);
                 flavor[cur] = 'R';
